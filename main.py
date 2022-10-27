@@ -1,5 +1,7 @@
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.mongo import MongoStorage
+from aiogram.dispatcher import FSMContext
+
 import config
 import logging
 from data import Data
@@ -15,8 +17,9 @@ dp = Dispatcher(bot, storage=storage)
 data = Data()
 
 
-@dp.message_handler(commands=['start'])
-async def start(message: types.Message):
+@dp.message_handler(commands=['start', 'cancel'])
+async def start(message: types.Message, state: FSMContext):
+    await state.set_state(None)
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn = types.KeyboardButton('Saņemt kultūras objektus')
     kb.add(btn)
@@ -30,7 +33,7 @@ async def reload(message: types.Message):
 
 
 @dp.message_handler(lambda message: message.text == 'Saņemt kultūras objektus')
-async def get_objects(message: types.Message):
+async def get_objects(message: types.Message, state: FSMContext):
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btns = []
     for category in data.objects.keys():
@@ -38,10 +41,11 @@ async def get_objects(message: types.Message):
         btns.append(btn)
     kb.add(*btns)
     await message.answer('Lūdzu, izvēlieties objektu:', reply_markup=kb)
+    await state.set_state('show_cats')
 
 
-@dp.message_handler(lambda message: message.text in data.objects.keys())
-async def get_objects_categories(message: types.Message):
+@dp.message_handler(state='show_cats')
+async def get_objects_categories(message: types.Message, state: FSMContext):
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btns = []
 
@@ -50,7 +54,6 @@ async def get_objects_categories(message: types.Message):
         btns.append(btn)
     kb.add(*btns)
 
-    state = dp.current_state()
     await state.update_data(obj=message.text)
     await state.set_state('show_names')
 
@@ -58,16 +61,17 @@ async def get_objects_categories(message: types.Message):
 
 
 @dp.message_handler(state='show_names')
-async def get_objects_by_category(message: types.Message):
+async def get_objects_by_category(message: types.Message, state: FSMContext):
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn = types.KeyboardButton('Saņemt kultūras objektus')
     kb.add(btn)
 
     await message.answer('Objekti:', reply_markup=kb)
-    state = dp.current_state()
+
     state_data = await state.get_data()
     await state.set_state(None)
-    await message.answer('\n'.join(data.get_objects_by_category(state_data['obj'], message.text)))
+    for x in data.get_objects_by_category(state_data['obj'], message.text):
+        await message.answer(x)
 
 if __name__ == '__main__':
 

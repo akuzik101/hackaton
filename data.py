@@ -19,7 +19,7 @@ class Data:
         self.c.execute('SELECT DISTINCT `Nozare` FROM objects ')
         objects = [x[0] for x in self.c.fetchall()]
         for obj in objects:
-            self.c.execute(f'SELECT DISTINCT`Objekta veids` FROM objects WHERE `Nozare` = "{obj}"')
+            self.c.execute(f'SELECT DISTINCT `Objekta veids` FROM objects WHERE `Nozare` = "{obj}"')
             categories = [x[0] for x in self.c.fetchall()]
             shortened_categories = []
             for category in categories:
@@ -28,11 +28,13 @@ class Data:
                     continue
                 if SEPARATOR in category:
                     shortened_categories.append(category.split(SEPARATOR)[1])
+                else:
+                    shortened_categories.append(category)
             self.objects[obj] = shortened_categories
 
     def get_objects_by_category(self, obj, category):
         if category == 'Citi':
-            self.c.execute(f'SELECT `Nosaukums` FROM objects WHERE `Nozare` = "{obj}" AND `Objekta veids` IS NULL')
+            self.c.execute(f'SELECT `Objekta nosaukums` FROM objects WHERE `Nozare` = "{obj}" AND `Objekta veids` IS NULL')
         else:
             self.c.execute('SELECT `Objekta nosaukums` FROM objects WHERE `Objekta veids` = ? AND `Nozare` = ?',
                        (category, obj))
