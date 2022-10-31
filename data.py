@@ -3,13 +3,12 @@ import pandas as pd
 import config
 import requests
 import io
-
-SEPARATOR = ' >> '
+from cultobject import CultObject
 
 
 class Data:
     def __init__(self):
-        self.conn = sql.connect('cultobjects.db')
+        self.conn = sql.connect(config.SQLITE_FILE)
         self.c = self.conn.cursor()
         self.objects = dict()
         self.reload()
@@ -24,23 +23,27 @@ class Data:
             for category in categories:
                 if category is None:
                     category = 'Citi'
-                elif SEPARATOR in category:
-                    category = category.split(SEPARATOR)[1]
-                if self.get_objects_by_category(obj, category) == []:
+                elif config.SEPARATOR in category:
+                    category = category.split(config.SEPARATOR)[1]
+                if not self.get_objects_by_category(obj, category):
                     continue
                 shortened_categories.append(category)
-            if shortened_categories == []:
+            if not shortened_categories:
                 continue
             self.objects[obj] = shortened_categories
 
-    def get_objects_by_category(self, obj, category):
+    def get_objects_by_category(self, obj: str, category: str) -> list[CultObject]:
         if category == 'Citi':
-            self.c.execute('SELECT `Objekta nosaukums` FROM objects WHERE `Nozare` = ? AND `Objekta veids` IS NULL', (obj,))
+            self.c.execute('SELECT * FROM objects WHERE `Nozare` = ? AND `Objekta veids` IS NULL',
+                           (obj,))
         else:
-            self.c.execute('SELECT `Objekta nosaukums` FROM objects WHERE `Objekta veids` LIKE ? AND `Nozare` = ?',
-                       (category, obj))
-        
-        return [x[0] for x in self.c.fetchall()]
+            self.c.execute('SELECT * FROM objects WHERE `Objekta veids` LIKE ? AND `Nozare` = ?',
+                           (category, obj))
+
+        result = []
+        for row in self.c:
+            result.append(CultObject(row))
+        return result
 
     def get_data(self):  # TODO: add error handling
         r = requests.get(config.DATA_URL)

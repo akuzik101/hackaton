@@ -71,7 +71,7 @@ async def get_objects_by_category(message: types.Message, state: FSMContext):
     state_data = await state.get_data()
     await state.set_state(None)
     for x in data.get_objects_by_category(state_data['obj'], message.text):
-        await message.answer(x)
+        await message.answer(x.name)
 
 if __name__ == '__main__':
 
