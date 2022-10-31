@@ -17,7 +17,7 @@ dp = Dispatcher(bot, storage=storage)
 data = Data()
 
 
-@dp.message_handler(commands=['start', 'cancel'])
+@dp.message_handler(commands=['start', 'cancel'], state='*')
 async def start(message: types.Message, state: FSMContext):
     await state.set_state(None)
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -26,7 +26,7 @@ async def start(message: types.Message, state: FSMContext):
     await message.answer('Esiet sveicināts!', reply_markup=kb)
 
 
-@dp.message_handler(commands=['reload'])
+@dp.message_handler(commands=['reload'], state='*')
 async def reload(message: types.Message):
     data.reload()
     await message.answer('Dati atjaunoti')
