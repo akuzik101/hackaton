@@ -66,10 +66,12 @@ async def get_objects_by_category(message: types.Message, state: FSMContext):
     kb.add(types.KeyboardButton('Atpakaļ'))
     state_data = await state.get_data()
 
-    objects = state_data['objects']
+    objects: list
     i = 0
-    if not objects:
+    if 'objects' not in state_data:
         objects = data.get_objects_by_category(state_data['obj'], message.text)
+    else:
+        objects = state_data['objects']
     print(objects)
 
     await message.answer('Objekti:')
@@ -90,6 +92,7 @@ async def get_objects_by_category(message: types.Message, state: FSMContext):
         kb.add(types.KeyboardButton('Parādīt vēl'))
         await state.set_data(objects[i:])
         await message.answer('Izvēlieties nākamo darbību.', reply_markup=kb)
-if __name__ == '__main__':
 
+
+if __name__ == '__main__':
     executor.start_polling(dp)
