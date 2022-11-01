@@ -5,6 +5,9 @@ from aiogram.dispatcher import FSMContext
 import config
 import logging
 import pickle
+import asyncio
+import base64
+import io
 
 from data import Data
 
@@ -20,7 +23,8 @@ dp = Dispatcher(bot, storage=storage)
 
 @dp.message_handler(commands=['start', 'cancel'], state='*')
 async def start(message: types.Message, state: FSMContext):
-    await state.set_state(None)
+    await state.reset_state()
+    await state.reset_data()
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn = types.KeyboardButton('Saņemt kultūras objektus')
     kb.add(btn)
@@ -72,7 +76,7 @@ async def get_objects_by_category(message: types.Message, state: FSMContext):
     if 'objects' not in state_data:
         objects = data.get_objects_by_category(state_data['obj'], message.text)
     else:
-        objects = pickle.loads(state_data['objects'])
+        objects = pickle.loads(base64.standard_b64decode(state_data['objects']))
     print([str(obj) for obj in objects])
 
     await message.answer('Objekti:')
@@ -85,13 +89,12 @@ async def get_objects_by_category(message: types.Message, state: FSMContext):
             break
         i += 1
     if end:
-        state_data.pop(objects)
         await state.reset_state()
         await state.reset_data()
         await message.answer('Visi rezultāti ir sniegti.', reply_markup=kb)
     else:
         kb.add(types.KeyboardButton('Parādīt vēl'))
-        state_data['obj'] = pickle.dumps(objects[i:])
+        state_data['objects'] = base64.standard_b64encode(pickle.dumps(objects[i:]))
         await state.update_data(state_data)
         await message.answer('Izvēlieties nākamo darbību.', reply_markup=kb)
 
@@ -99,7 +102,7 @@ async def get_objects_by_category(message: types.Message, state: FSMContext):
 if __name__ == '__main__':
     try:
         executor.start_polling(dp)
-    except KeyboardInterrupt:
+    finally:
         print('Shutting down...')
-        dp.storage.close()
+        asyncio.run(dp.storage.close())
         data.c.close()
