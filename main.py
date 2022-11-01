@@ -101,6 +101,5 @@ if __name__ == '__main__':
         executor.start_polling(dp)
     except KeyboardInterrupt:
         print('Shutting down...')
-        await dp.storage.close()
+        dp.storage.close()
         data.c.close()
-        await dp.storage.wait_closed()
