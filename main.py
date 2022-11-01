@@ -73,14 +73,14 @@ async def get_objects_by_category(message: types.Message, state: FSMContext):
         objects = data.get_objects_by_category(state_data['obj'], message.text)
     else:
         objects = pickle.loads(state_data['objects'])
-    print(objects)
+    print([str(obj) for obj in objects])
 
     await message.answer('Objekti:')
     end = False
     for j in range(config.OBJ_AT_ONCE):
         try:
             await message.answer(str(objects[i]))
-        except KeyError:
+        except IndexError:
             end = True
             break
         i += 1
