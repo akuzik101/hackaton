@@ -77,7 +77,6 @@ async def get_objects_by_category(message: types.Message, state: FSMContext):
         objects = data.get_objects_by_category(state_data['obj'], message.text)
     else:
         objects = pickle.loads(base64.standard_b64decode(state_data['objects']))
-    print([str(obj) for obj in objects])
 
     await message.answer('Objekti:')
     end = False
@@ -93,7 +92,7 @@ async def get_objects_by_category(message: types.Message, state: FSMContext):
         await state.reset_data()
         await message.answer('Visi rezultāti ir sniegti.', reply_markup=kb)
     else:
-        kb.add(types.KeyboardButton('Parādīt vēl'))
+        kb.add(types.KeyboardButton('Ielādēt vēl'))
         state_data['objects'] = base64.standard_b64encode(pickle.dumps(objects[i:]))
         await state.update_data(state_data)
         await message.answer('Izvēlieties nākamo darbību.', reply_markup=kb)
