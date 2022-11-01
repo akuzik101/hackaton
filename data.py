@@ -1,4 +1,4 @@
-import sqlite3 as sql
+import sqlite3 as sql  # TODO: migrate to aiosqlite
 import pandas as pd
 import config
 import requests

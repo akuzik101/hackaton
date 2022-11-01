@@ -18,3 +18,6 @@ class CultObject:
         # ATVK
         self.url = query_res[Fields.URL]
         self.image_url = query_res[Fields.IMG_URL]
+
+    def __str__(self):
+        return self.name

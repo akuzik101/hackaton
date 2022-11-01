@@ -8,13 +8,13 @@ from data import Data
 
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot(token=config.TG_TOKEN)
-
+data = Data()
 
 storage = MongoStorage(uri=config.MONGO_URL)
-dp = Dispatcher(bot, storage=storage)
 
-data = Data()
+bot = Bot(token=config.TG_TOKEN)
+
+dp = Dispatcher(bot, storage=storage)
 
 
 @dp.message_handler(commands=['start', 'cancel'], state='*')
@@ -32,7 +32,7 @@ async def reload(message: types.Message):
     await message.answer('Dati atjaunoti')
 
 
-@dp.message_handler(lambda message: message.text == 'Saņemt kultūras objektus')
+@dp.message_handler(lambda message: message.text in ['Saņemt kultūras objektus', 'Atpakaļ'], state='*')
 async def get_objects(message: types.Message, state: FSMContext):
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btns = []
@@ -63,16 +63,33 @@ async def get_objects_categories(message: types.Message, state: FSMContext):
 @dp.message_handler(state='show_names')
 async def get_objects_by_category(message: types.Message, state: FSMContext):
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    btn = types.KeyboardButton('Saņemt kultūras objektus')
-    kb.add(btn)
-
-    await message.answer('Objekti:', reply_markup=kb)
-
+    kb.add(types.KeyboardButton('Atpakaļ'))
     state_data = await state.get_data()
-    await state.set_state(None)
-    for x in data.get_objects_by_category(state_data['obj'], message.text):
-        await message.answer(x.name)
 
+    objects = state_data['objects']
+    i = 0
+    if not objects:
+        objects = data.get_objects_by_category(state_data['obj'], message.text)
+    print(objects)
+
+    await message.answer('Objekti:')
+    end = False
+    for j in range(config.OBJ_AT_ONCE):
+        try:
+            await message.answer(str(objects[i]))
+        except KeyError:
+            end = True
+            break
+        i += 1
+    if end:
+        state_data.pop(objects)
+        await state.reset_state()
+        await state.reset_data()
+        await message.answer('Visi rezultāti ir sniegti.', reply_markup=kb)
+    else:
+        kb.add(types.KeyboardButton('Parādīt vēl'))
+        await state.set_data(objects[i:])
+        await message.answer('Izvēlieties nākamo darbību.', reply_markup=kb)
 if __name__ == '__main__':
 
     executor.start_polling(dp)

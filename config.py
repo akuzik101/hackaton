@@ -20,6 +20,9 @@ SQLITE_FILE = ':memory:'
 # To achieve that, just replace this with empty string or None.
 SEPARATOR = ' >> '
 
+# How much objects should the bot message to user at once?
+OBJ_AT_ONCE = 3
+
 
 # DO NOT EDIT BELOW UNLESS YOU ARE REALLY SURE WHAT YOU ARE DOING!
 class Fields:
