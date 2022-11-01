@@ -4,6 +4,8 @@ from aiogram.dispatcher import FSMContext
 
 import config
 import logging
+import pickle
+
 from data import Data
 
 logging.basicConfig(level=logging.INFO)
@@ -11,7 +13,6 @@ logging.basicConfig(level=logging.INFO)
 data = Data()
 
 storage = MongoStorage(uri=config.MONGO_URL)
-
 bot = Bot(token=config.TG_TOKEN)
 
 dp = Dispatcher(bot, storage=storage)
@@ -71,7 +72,7 @@ async def get_objects_by_category(message: types.Message, state: FSMContext):
     if 'objects' not in state_data:
         objects = data.get_objects_by_category(state_data['obj'], message.text)
     else:
-        objects = state_data['objects']
+        objects = pickle.loads(state_data['objects'])
     print(objects)
 
     await message.answer('Objekti:')
@@ -90,9 +91,16 @@ async def get_objects_by_category(message: types.Message, state: FSMContext):
         await message.answer('Visi rezultāti ir sniegti.', reply_markup=kb)
     else:
         kb.add(types.KeyboardButton('Parādīt vēl'))
-        await state.set_data(objects[i:])
+        state_data['obj'] = pickle.dumps(objects[i:])
+        await state.update_data(state_data)
         await message.answer('Izvēlieties nākamo darbību.', reply_markup=kb)
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp)
+    try:
+        executor.start_polling(dp)
+    except KeyboardInterrupt:
+        print('Shutting down...')
+        await dp.storage.close()
+        data.c.close()
+        await dp.storage.wait_closed()
