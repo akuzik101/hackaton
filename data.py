@@ -23,8 +23,6 @@ class Data:
             for category in categories:
                 if category is None:
                     category = 'Citi'
-                elif config.SEPARATOR in category:
-                    category = category.split(config.SEPARATOR)[1]
                 if not self.get_objects_by_category(obj, category):
                     continue
                 shortened_categories.append(category)
@@ -37,7 +35,7 @@ class Data:
             self.c.execute('SELECT * FROM objects WHERE `Nozare` = ? AND `Objekta veids` IS NULL',
                            (obj,))
         else:
-            self.c.execute('SELECT * FROM objects WHERE `Objekta veids` LIKE ? AND `Nozare` = ?',
+            self.c.execute('SELECT * FROM objects WHERE `Objekta veids` = ? AND `Nozare` = ?',
                            (category, obj))
 
         result = []

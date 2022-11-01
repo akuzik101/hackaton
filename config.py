@@ -16,11 +16,7 @@ MONGO_URL = f'mongodb+srv://aiogram:{MONGO_PASSWORD}@cluster0.twuumbu.mongodb.ne
 # The bot will definitely be faster.
 SQLITE_FILE = ':memory:'
 
-# Keep it untouched, unless you want to display full categories.
-# To achieve that, just replace this with empty string or None.
-SEPARATOR = ' >> '
-
-# How much objects should the bot message to user at once?
+# How many objects should the bot message to user at once?
 OBJ_AT_ONCE = 3
 
 

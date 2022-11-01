@@ -57,7 +57,8 @@ async def get_objects_categories(message: types.Message, state: FSMContext):
     for obj in data.objects[message.text]:
         btn = types.KeyboardButton(obj)
         btns.append(btn)
-    kb.add(*btns)
+    for btn in btns:
+        kb.row(btn)
 
     await state.update_data(obj=message.text)
     await state.set_state('show_names')
