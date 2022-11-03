@@ -1,3 +1,5 @@
+from geopy.distance import distance
+
 from config import Fields
 from typing import Any
 
@@ -15,7 +17,10 @@ class Field:
     def __str__(self):
         if self.value is None or self.display_name is None:
             return ''
-        return f'{self.display_name}: {self.value}'
+        if isinstance(self.value, float):
+            return f'{self.display_name}: {int(self.value)}'
+        else:
+            return f'{self.display_name}: {self.value}'
 
 
 class CultObject:
@@ -41,13 +46,15 @@ class CultObject:
         for field in self.data.values():
             field.set_value(query_res)
 
-    def get_real_url(self):
-        pass
+    def set_distance_to(self, cords: tuple[float, float]):
+        self.data.update({'distance': distance(cords, (self.data['lat'].value, self.data['lon'].value))})
 
     def __str__(self):
         result = ''
         for field in self.data.values():
-            if field.display_name:
+            if isinstance(field, distance):
+                result += f'{field.km:.2f}km attālumā no jums'
+            elif field.display_name and field.value is not None:
                 result += str(field) + '\n'
         return result
 

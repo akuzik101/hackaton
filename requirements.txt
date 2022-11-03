@@ -3,3 +3,6 @@ aiogram
 pandas
 motor
 requests
+geopy
+aiohttp
+aiodns
