@@ -31,6 +31,11 @@ async def start(message: types.Message, state: FSMContext):
     await message.answer('Esiet sveicināts!', reply_markup=kb)
 
 
+@dp.message_handler(commands=['ping'], state='*')
+async def ping(message: types.Message):
+    await message.answer('PONG!')
+
+
 @dp.message_handler(commands=['reload'], state='*')
 async def reload(message: types.Message):
     data.reload()
@@ -65,7 +70,7 @@ async def get_objects_categories(message: types.Message, state: FSMContext):
 
     await message.answer('Lūdzu, izvēlieties objekta kategoriju:', reply_markup=kb)
 
-
+    
 @dp.message_handler(state='show_names')
 async def get_objects_by_category(message: types.Message, state: FSMContext):
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -83,6 +88,8 @@ async def get_objects_by_category(message: types.Message, state: FSMContext):
     end = False
     for j in range(config.OBJ_AT_ONCE):
         try:
+            if objects[i].data['image_url'].value:
+                bot.send_photo(photo=objects[i].image_url)
             await message.answer(str(objects[i]))
         except IndexError:
             end = True
