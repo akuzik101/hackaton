@@ -89,7 +89,7 @@ async def get_objects_by_category(message: types.Message, state: FSMContext):
     for j in range(config.OBJ_AT_ONCE):
         try:
             if objects[i].data['image_url'].value:
-                bot.send_photo(photo=objects[i].image_url)
+                await bot.send_photo(photo=objects[i].data['image_url'].value, chat_id=message.from_id)
             await message.answer(str(objects[i]))
         except IndexError:
             end = True

@@ -41,6 +41,9 @@ class CultObject:
         for field in self.data.values():
             field.set_value(query_res)
 
+    def get_real_url(self):
+        pass
+
     def __str__(self):
         result = ''
         for field in self.data.values():
