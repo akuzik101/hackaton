@@ -4,7 +4,7 @@ TG_TOKEN = '5460406581:AAGrsAxUDwRE0aqxayWeoYSz--12GsEjFsA'
 # A link pointing to the table with required data
 DATA_URL = 'https://data.gov.lv/dati/dataset/6d564a05-1d8c-49b8-835f-c969c61da182/resource/92af15f3-9674-426e-925c-86c6254baa0d/download/objektusaraksts.csv'
 
-# For now, bot uses MongoDB for Finite State Machine storage
+# For now, bot uses MongoDB for finite-state machine storage
 # Migration to Redis will be done soon
 # But now you need to provide a password for MongoDB user
 MONGO_PASSWORD = 'OE6xbZToJC9i2r9w'

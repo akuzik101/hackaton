@@ -2,18 +2,19 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.mongo import MongoStorage
 from aiogram.dispatcher import FSMContext
 
-import config
 import logging
 import pickle
 import asyncio
 import base64
-import io
 
 from data import Data
+import config
 
 logging.basicConfig(level=logging.INFO)
 
 data = Data()
+loop = asyncio.new_event_loop()
+loop.run_until_complete(data.init())
 
 storage = MongoStorage(uri=config.MONGO_URL)
 bot = Bot(token=config.TG_TOKEN)
@@ -26,7 +27,7 @@ async def start(message: types.Message, state: FSMContext):
     await state.reset_state()
     await state.reset_data()
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    btn = types.KeyboardButton('Saņemt kultūras objektus')
+    btn = types.KeyboardButton('Sūtīt ģeopozīciju', request_location=True)
     kb.add(btn)
     await message.answer('Esiet sveicināts!', reply_markup=kb)
 
@@ -38,12 +39,23 @@ async def ping(message: types.Message):
 
 @dp.message_handler(commands=['reload'], state='*')
 async def reload(message: types.Message):
-    data.reload()
+    await data.reload()
     await message.answer('Dati atjaunoti')
+
+
+@dp.message_handler(content_types=['location'], state='*')
+async def get_location(message: types.Message, state: FSMContext):
+    await state.update_data(loc=(message.location.latitude, message.location.longitude))
+    if await state.get_state() not in ['show_obj', 'show_cats']:
+        await state.set_state('show_obj')
+    kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    kb.add(types.KeyboardButton('Saņemt kultūras objektus'))
+    await message.answer('Ģeopozīcija ir saņemta', reply_markup=kb)
 
 
 @dp.message_handler(lambda message: message.text in ['Saņemt kultūras objektus', 'Atpakaļ'], state='*')
 async def get_objects(message: types.Message, state: FSMContext):
+    await state.update_data({'objects': None})
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btns = []
     for category in data.objects.keys():
@@ -57,7 +69,7 @@ async def get_objects(message: types.Message, state: FSMContext):
 @dp.message_handler(state='show_cats')
 async def get_objects_categories(message: types.Message, state: FSMContext):
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    btns = []
+    btns = [types.KeyboardButton('Atpakaļ')]
 
     for obj in data.objects[message.text]:
         btn = types.KeyboardButton(obj)
@@ -70,7 +82,7 @@ async def get_objects_categories(message: types.Message, state: FSMContext):
 
     await message.answer('Lūdzu, izvēlieties objekta kategoriju:', reply_markup=kb)
 
-    
+
 @dp.message_handler(state='show_names')
 async def get_objects_by_category(message: types.Message, state: FSMContext):
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -79,8 +91,11 @@ async def get_objects_by_category(message: types.Message, state: FSMContext):
 
     objects: list
     i = 0
-    if 'objects' not in state_data:
+    if 'objects' not in state_data or state_data['objects'] is None:
         objects = data.get_objects_by_category(state_data['obj'], message.text)
+        for obj in objects:
+            obj.set_distance_to(state_data['loc'])
+        objects.sort(key=lambda obj: obj.data['distance'])
     else:
         objects = pickle.loads(base64.standard_b64decode(state_data['objects']))
 
@@ -89,7 +104,10 @@ async def get_objects_by_category(message: types.Message, state: FSMContext):
     for j in range(config.OBJ_AT_ONCE):
         try:
             if objects[i].data['image_url'].value:
-                await bot.send_photo(photo=objects[i].data['image_url'].value, chat_id=message.from_id)
+                try:
+                    await bot.send_photo(photo=objects[i].data['image_url'].value, chat_id=message.from_id)
+                except:
+                    pass
             await message.answer(str(objects[i]))
         except IndexError:
             end = True
@@ -97,7 +115,7 @@ async def get_objects_by_category(message: types.Message, state: FSMContext):
         i += 1
     if end:
         await state.reset_state()
-        await state.reset_data()
+        await state.update_data({'objects': None})
         await message.answer('Visi rezultāti ir sniegti.', reply_markup=kb)
     else:
         kb.add(types.KeyboardButton('Ielādēt vēl'))
@@ -111,5 +129,6 @@ if __name__ == '__main__':
         executor.start_polling(dp)
     finally:
         print('Shutting down...')
-        asyncio.run(dp.storage.close())
+        loop.run_until_complete(dp.storage.close())
         data.c.close()
+        data.db.close()

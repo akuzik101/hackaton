@@ -1,17 +1,22 @@
-import sqlite3 as sql  # TODO: migrate to aiosqlite
 import pandas as pd
 import config
-import requests
+import aiohttp
 import io
+import sqlite3 as sql  # TODO: migrate to async sqlalchemy core
+
 from cultobject import CultObject
 
 
 class Data:
     def __init__(self):
-        self.conn = sql.connect(config.SQLITE_FILE)
-        self.c = self.conn.cursor()
+        self.db = None
+        self.c = None
         self.objects = dict()
-        self.reload()
+
+    async def init(self):
+        self.db = sql.connect(config.SQLITE_FILE)
+        self.c = self.db.cursor()
+        await self.reload()
 
     def get_objects(self):
         self.c.execute('SELECT DISTINCT `Nozare` FROM objects ')
@@ -40,15 +45,17 @@ class Data:
 
         result = []
         for row in self.c:
-            result.append(CultObject(row))
+            result.append(CultObject(list(row)))
         return result
 
-    def get_data(self):  # TODO: add error handling
-        r = requests.get(config.DATA_URL)
-        df = pd.read_csv(io.StringIO(r.content.decode('utf-8')))
-        df.to_sql('objects', self.conn)
+    async def get_data(self):  # TODO: add error handling
+        async with aiohttp.ClientSession() as session:
+            async with session.get(config.DATA_URL) as response:
+                content = await response.text()
+                df = pd.read_csv(io.StringIO(content))
+        df.to_sql('objects', self.db)
 
-    def reload(self):
+    async def reload(self):
         self.c.execute('DROP TABLE IF EXISTS objects')
-        self.get_data()
+        await self.get_data()
         self.get_objects()
