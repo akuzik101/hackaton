@@ -1,0 +1,5 @@
+pymongo
+aiogram
+pandas
+motor
+requests
