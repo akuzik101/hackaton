@@ -24,7 +24,7 @@ dp = Dispatcher(bot, storage=storage)
 
 @dp.message_handler(commands=['start', 'cancel'], state='*')
 async def start(message: types.Message, state: FSMContext):
-    await state.reset_state()
+    await state.set_state(None)
     await state.reset_data()
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn = types.KeyboardButton('Sūtīt ģeopozīciju', request_location=True)
@@ -55,7 +55,7 @@ async def get_location(message: types.Message, state: FSMContext):
 
 @dp.message_handler(lambda message: message.text in ['Saņemt kultūras objektus', 'Atpakaļ'], state='*')
 async def get_objects(message: types.Message, state: FSMContext):
-    await state.update_data({'objects': None})
+    await state.update_data(objects=None)
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btns = []
     for category in data.objects.keys():
@@ -114,13 +114,13 @@ async def get_objects_by_category(message: types.Message, state: FSMContext):
             break
         i += 1
     if end:
-        await state.reset_state()
-        await state.update_data({'objects': None})
+        await state.set_state(None)
+        await state.update_data(objects=None)
         await message.answer('Visi rezultāti ir sniegti.', reply_markup=kb)
     else:
         kb.add(types.KeyboardButton('Ielādēt vēl'))
-        state_data['objects'] = base64.standard_b64encode(pickle.dumps(objects[i:]))
-        await state.update_data(state_data)
+        serialized_objects = base64.standard_b64encode(pickle.dumps(objects[i:]))
+        await state.update_data(objects=serialized_objects)
         await message.answer('Izvēlieties nākamo darbību.', reply_markup=kb)
 
 

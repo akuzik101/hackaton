@@ -47,11 +47,16 @@ class CultObject:
             field.set_value(query_res)
 
     def set_distance_to(self, cords: tuple[float, float]):
-        self.data.update({'distance': distance(cords, (self.data['lat'].value, self.data['lon'].value))})
+        if self.data['lat'].value is None  or self.data['lon'].value is None:
+            self.data.update({'distance':10000})
+        else:
+            self.data.update({'distance': distance(cords, (self.data['lat'].value, self.data['lon'].value))})
 
     def __str__(self):
         result = ''
         for field in self.data.values():
+            if field == 10000:
+                continue
             if isinstance(field, distance):
                 result += f'{field.km:.2f}km attālumā no jums'
             elif field.display_name and field.value is not None:

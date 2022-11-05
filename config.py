@@ -7,7 +7,7 @@ DATA_URL = 'https://data.gov.lv/dati/dataset/6d564a05-1d8c-49b8-835f-c969c61da18
 # For now, bot uses MongoDB for finite-state machine storage
 # Migration to Redis will be done soon
 # But now you need to provide a password for MongoDB user
-MONGO_PASSWORD = 'OE6xbZToJC9i2r9w'
+MONGO_PASSWORD = 'LcUXVmSp8twg76s2'
 # And a connection URL
 MONGO_URL = f'mongodb+srv://aiogram:{MONGO_PASSWORD}@cluster0.twuumbu.mongodb.net/?retryWrites=true&w=majority'
 
