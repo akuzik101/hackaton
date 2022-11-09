@@ -2,6 +2,8 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.mongo import MongoStorage
 from aiogram.dispatcher import FSMContext
 
+from geopy.geocoders import Nominatim
+
 import logging
 import pickle
 import asyncio
@@ -11,6 +13,8 @@ from data import Data
 import config
 
 logging.basicConfig(level=logging.INFO)
+
+geolocator = Nominatim(user_agent='kulturas_kompass')
 
 data = Data()
 loop = asyncio.new_event_loop()
@@ -27,8 +31,9 @@ async def start(message: types.Message, state: FSMContext):
     await state.set_state(None)
     await state.reset_data()
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    btn = types.KeyboardButton('Sūtīt ģeopozīciju', request_location=True)
+    btn = types.KeyboardButton('Sūtīt pašreizējo ģeopozīciju', request_location=True)
     kb.add(btn)
+    kb.add(types.KeyboardButton('Sūtīt adresi'))
     await message.answer('Esiet sveicināts!', reply_markup=kb)
 
 
@@ -42,6 +47,23 @@ async def reload(message: types.Message):
     await data.reload()
     await message.answer('Dati atjaunoti')
 
+@dp.message_handler(lambda message: message.text == 'Sūtīt adresi', commands=['loc', 'location'], state='*')
+async def set_location_by_address(message: types.Message, state: FSMContext):
+    await state.update_data(state_bak=await state.get_state())
+    await state.set_state('loc')
+    await message.answer('Lūdzu, ievadiet adresi')
+
+@dp.message_handler(content_types=['text'], state='loc')
+async def process_location_by_address(message: types.Message, state: FSMContext):
+    state_data = await state.get_data()
+    await state.set_state(state_data['state_bak'])
+    await state.update_data(state_bak=None)
+    location = geolocator.geocode(message.text)
+    await state.update_data(loc=(location.latitude, location.longitude))
+    await message.answer('Saņemta šāda ģeopozīcija:')
+    await bot.send_location(chat_id=message.from_id, latitude=location.latitude, longitude=location.longitude)
+    await message.answer(location.address)
+    
 
 @dp.message_handler(content_types=['location'], state='*')
 async def get_location(message: types.Message, state: FSMContext):
