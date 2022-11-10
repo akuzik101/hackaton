@@ -30,7 +30,7 @@ dp = Dispatcher(bot, storage=storage)
 async def start(message: types.Message, state: FSMContext):
     await state.set_state(None)
     await state.reset_data()
-    kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    kb = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     btn = types.KeyboardButton('Sūtīt pašreizējo ģeopozīciju', request_location=True)
     kb.add(btn)
     kb.add(types.KeyboardButton('Sūtīt adresi'))
@@ -47,7 +47,8 @@ async def reload(message: types.Message):
     await data.reload()
     await message.answer('Dati atjaunoti')
 
-@dp.message_handler(lambda message: message.text == 'Sūtīt adresi', commands=['loc', 'location'], state='*')
+@dp.message_handler(commands=['loc', 'location'], state='*')
+@dp.message_handler(lambda message: message.text == 'Sūtīt adresi', state='*')
 async def set_location_by_address(message: types.Message, state: FSMContext):
     await state.update_data(state_bak=await state.get_state())
     await state.set_state('loc')
@@ -62,7 +63,11 @@ async def process_location_by_address(message: types.Message, state: FSMContext)
     await state.update_data(loc=(location.latitude, location.longitude))
     await message.answer('Saņemta šāda ģeopozīcija:')
     await bot.send_location(chat_id=message.from_id, latitude=location.latitude, longitude=location.longitude)
-    await message.answer(location.address)
+    kb = None
+    if not await state.get_state():
+        kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        kb.add(types.KeyboardButton('Saņemt kultūras objektus'))
+    await message.answer(location.address, reply_markup=kb)
     
 
 @dp.message_handler(content_types=['location'], state='*')
